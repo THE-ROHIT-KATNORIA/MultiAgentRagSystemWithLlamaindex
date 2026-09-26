@@ -1,0 +1,22 @@
+# Core LlamaIndex Framework
+llama-index-core>=0.11.0
+llama-index-llms-ollama>=0.3.0
+llama-index-embeddings-ollama>=0.3.0
+llama-index-vector-stores-postgres>=0.2.0
+llama-index-readers-file>=0.2.0
+
+# Reranker & Embeddings
+sentence-transformers>=3.0.0
+
+# Database & Storage
+psycopg[binary,pool]>=3.2.0
+
+# FastAPI REST API & Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+
+# Agent Tools & Utilities
+python-dotenv>=1.0.0
+duckduckgo-search>=6.0.0
+pypdf>=4.3.0

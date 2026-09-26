@@ -1,0 +1,22 @@
+# Configuration package
+from config.settings import (
+    POSTGRES_HOST,
+    POSTGRES_PORT,
+    POSTGRES_DB,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    OLLAMA_API_KEY,
+    EMBED_DIM,
+    DATA_DIR,
+    NODE_CACHE_DIR,
+    NODE_CACHE_FILE,
+    RERANKER_PATH,
+    VECTOR_TABLE_NAME,
+    ACTUAL_VECTOR_TABLE,
+    REBUILD_PGVECTOR,
+    ALLOWED_DEPARTMENTS,
+    MAX_INPUT_LENGTH,
+    MAX_HISTORY_CHARS,
+    RETRIEVAL_TOP_K,
+    configure_llm,
+)

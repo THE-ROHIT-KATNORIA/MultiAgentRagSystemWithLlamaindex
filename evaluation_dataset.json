@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "question": "How many annual leave days are full-time employees entitled to?",
+    "expected_answer": "Full-time employees are entitled to 20 days of annual leave per calendar year."
+  },
+  {
+    "id": 2,
+    "question": "Who approves annual leave requests?",
+    "expected_answer": "The employee's reporting manager approves annual leave requests."
+  },
+  {
+    "id": 3,
+    "question": "How far in advance should planned annual leave normally be requested?",
+    "expected_answer": "Planned annual leave should normally be requested at least 7 days in advance."
+  },
+  {
+    "id": 4,
+    "question": "How many unused annual leave days can be carried forward?",
+    "expected_answer": "Up to 5 unused annual leave days can be carried forward to the next calendar year."
+  },
+  {
+    "id": 5,
+    "question": "What is the standard resignation notice period?",
+    "expected_answer": "The standard resignation notice period is 30 days unless the employment agreement specifies otherwise."
+  },
+  {
+    "id": 6,
+    "question": "Can employees work remotely?",
+    "expected_answer": "Employees may work remotely when they meet the company's eligibility requirements and receive manager approval."
+  },
+  {
+    "id": 7,
+    "question": "What must employees do about attendance?",
+    "expected_answer": "Employees must follow their assigned working schedule and report absences according to company procedures."
+  },
+  {
+    "id": 8,
+    "question": "What are the requirements for company account passwords?",
+    "expected_answer": "Company account passwords must meet the organization's required length and complexity rules."
+  },
+  {
+    "id": 9,
+    "question": "Can employees share company passwords?",
+    "expected_answer": "No. Employees must not share their company passwords with other people."
+  },
+  {
+    "id": 10,
+    "question": "What should an employee do if they suspect a security incident?",
+    "expected_answer": "The employee should promptly report the suspected security incident through the company's designated IT security reporting process."
+  },
+  {
+    "id": 11,
+    "question": "How many days of annual leave can an employee take?",
+    "expected_answer": "Full-time employees are entitled to 20 days of annual leave per calendar year."
+  },
+  {
+    "id": 12,
+    "question": "What is the notice period when an employee resigns?",
+    "expected_answer": "The standard resignation notice period is 30 days unless the employment agreement specifies otherwise."
+  }
+]
