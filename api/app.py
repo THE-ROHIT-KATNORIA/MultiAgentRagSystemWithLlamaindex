@@ -67,9 +67,9 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     app = FastAPI(
-        title="LlamaIndex RAG API",
+        title="MultiAgentRagSystemWithLlamaindex API",
         description=(
-            "Enterprise RAG system with hybrid retrieval, dynamic routing, "
+            "Enterprise Multi-Agent RAG system with hybrid retrieval, dynamic routing, "
             "streaming, and a multi-tool agent."
         ),
         version="1.0.0",

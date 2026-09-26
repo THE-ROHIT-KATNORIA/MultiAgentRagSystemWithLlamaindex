@@ -1,4 +1,5 @@
-# 🔍 Advanced LlamaIndex RAG + Agent
+# 🔍 MultiAgentRagSystemWithLlamaindex
+### Enterprise Multi-Agent RAG System with LlamaIndex & PostgreSQL
 
 An enterprise-grade Retrieval-Augmented Generation (RAG) system with a
 FastAPI REST API, multi-tool agent, hybrid retrieval, streaming, and
