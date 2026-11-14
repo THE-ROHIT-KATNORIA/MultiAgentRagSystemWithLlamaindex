@@ -65,7 +65,8 @@ REBUILD_PGVECTOR = False
 # ──────────────────────────────────────────────────────────────
 
 ALLOWED_DEPARTMENTS = {"HR", "IT", "FINANCE"}
-ENABLE_RERANKER = os.getenv("ENABLE_RERANKER", "true").lower() in ("true", "1", "yes")
+# Default to false for cloud environments with 512MB RAM (set to true on plans with >=1GB RAM)
+ENABLE_RERANKER = os.getenv("ENABLE_RERANKER", "false").lower() in ("true", "1", "yes")
 MAX_INPUT_LENGTH = 2000
 MAX_HISTORY_CHARS = 3000
 RETRIEVAL_TOP_K = 10
@@ -84,6 +85,9 @@ FUSION_NUM_QUERIES = 4
 
 def configure_llm():
     """Configure the global LLM and embedding model."""
+    import torch
+    torch.set_num_threads(1)
+
     from llama_index.core import Settings
     from llama_index.llms.groq import Groq
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
