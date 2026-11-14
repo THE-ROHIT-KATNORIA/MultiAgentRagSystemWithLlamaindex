@@ -1,3 +1,12 @@
+---
+title: Multi Agent Rag System
+emoji: ⚡
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+---
+
 # 🔍 MultiAgentRagSystemWithLlamaindex
 ### Enterprise Multi-Agent RAG System with LlamaIndex & PostgreSQL
 

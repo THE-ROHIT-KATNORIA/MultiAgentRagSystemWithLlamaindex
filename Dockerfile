@@ -1,15 +1,12 @@
 # ──────────────────────────────────────────────────────────────
-# Multi-stage Dockerfile for MultiAgentRagSystem
+# Dockerfile for Hugging Face Spaces (16GB RAM) & Cloud Deploy
 # ──────────────────────────────────────────────────────────────
 
-FROM python:3.11-slim AS base
+FROM python:3.11-slim
 
-# Prevent Python from writing .pyc files and enable memory tuning
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MALLOC_TRIM_THRESHOLD_=100000 \
-    OMP_NUM_THREADS=1 \
-    MKL_NUM_THREADS=1
+    PORT=7860
 
 WORKDIR /app
 
@@ -27,14 +24,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ── Copy application code ──
 COPY . .
 
-# ── Pre-cache BGE embedding model only (no heavy CrossEncoder) ──
-RUN python -c "\
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding; \
-HuggingFaceEmbedding(model_name='BAAI/bge-base-en-v1.5'); \
-print('Embedding model cached successfully')"
+# ── Create non-root user for Hugging Face Spaces security & permissions ──
+RUN useradd -m -u 1000 user && \
+    mkdir -p /app/NodeCache /app/Data /home/user/.cache && \
+    chown -R user:user /app /home/user
 
-# ── Expose port and start ──
-EXPOSE 8000
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
-CMD ["sh", "-c", "uvicorn run_api:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]
+EXPOSE 7860
 
+CMD ["sh", "-c", "uvicorn run_api:app --host 0.0.0.0 --port ${PORT:-7860}"]
