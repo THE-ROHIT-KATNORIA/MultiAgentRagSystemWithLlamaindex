@@ -125,11 +125,16 @@ def build_or_load_index():
         index = VectorStoreIndex.from_vector_store(vector_store=vector_store)
         nodes = load_cached_nodes()
         if nodes is None:
-            raise RuntimeError(
+            log.warning(
                 "pgvector data exists but node cache is missing. "
-                "Set REBUILD_PGVECTOR=True once to rebuild."
+                "Regenerating node cache from Data/ documents..."
             )
-        log.info("Loaded index with %d cached nodes.", len(nodes))
+            nodes = load_and_chunk_documents()
+            try:
+                save_nodes(nodes)
+            except Exception as e:
+                log.warning("Could not persist node cache to disk: %s", e)
+        log.info("Loaded index with %d nodes.", len(nodes) if nodes else 0)
     else:
         log.info("No pgvector data found — creating new index...")
         nodes = load_and_chunk_documents()

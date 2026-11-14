@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 
 def save_nodes(nodes) -> None:
     """Serialize nodes to JSON."""
+    os.makedirs(os.path.dirname(NODE_CACHE_FILE), exist_ok=True)
     serialized = []
     for node in nodes:
         serialized.append({
