@@ -35,3 +35,4 @@ services:
       # If upgraded to paid Starter plan (>=1GB RAM), change to "true".
       - key: ENABLE_RERANKER
         value: "false"
+

@@ -357,6 +357,79 @@
       0%, 80%, 100% { transform: scale(0.3); opacity: 0.4; }
       40% { transform: scale(1); opacity: 1; }
     }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 16px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .modal-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.45;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 18px;
+      font-family: inherit;
+    }
+    .modal-input:focus {
+      border-color: #18181b;
+    }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .modal-save-btn {
+      background: #18181b;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -371,6 +444,10 @@
       <span>Assistant</span>
     </div>
     <div class="header-actions">
+      <button class="icon-btn" onclick="openApiModal()" id="api-btn" title="Configure Backend API URL">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span id="api-btn-label">Backend API</span>
+      </button>
       <button class="icon-btn" onclick="startNewChat()" title="Start a new chat">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         New Chat
@@ -414,10 +491,79 @@
     </div>
   </main>
 
+  <!-- Backend API Modal -->
+  <div id="api-modal" class="modal-backdrop" style="display:none;" onclick="if(event.target===this) closeApiModal()">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Backend API Connection</h3>
+        <button class="modal-close" onclick="closeApiModal()">✕</button>
+      </div>
+      <p class="modal-desc">Connect this Vercel frontend to your deployed backend (e.g. <code>https://your-app.onrender.com</code>). Leave empty when running locally or served from FastAPI directly.</p>
+      <input type="text" id="api-url-input" class="modal-input" placeholder="https://your-app.onrender.com">
+      <div class="modal-footer">
+        <button class="icon-btn" onclick="resetApiUrl()">Reset (Default)</button>
+        <button class="modal-save-btn" onclick="saveApiUrl()">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentSessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+    let apiBaseUrl = localStorage.getItem('rag_api_url') || '';
+
+    function getEndpoint(path) {
+      if (apiBaseUrl) {
+        return apiBaseUrl.replace(/\/+$/, '') + path;
+      }
+      return path;
+    }
+
+    function updateApiStatus() {
+      const label = document.getElementById('api-btn-label');
+      if (apiBaseUrl) {
+        try {
+          const u = new URL(apiBaseUrl);
+          label.textContent = u.hostname.replace('www.', '');
+        } catch {
+          label.textContent = 'Connected';
+        }
+      } else {
+        label.textContent = 'API Server';
+      }
+    }
+
+    function openApiModal() {
+      document.getElementById('api-url-input').value = apiBaseUrl;
+      document.getElementById('api-modal').style.display = 'flex';
+      document.getElementById('api-url-input').focus();
+    }
+
+    function closeApiModal() {
+      document.getElementById('api-modal').style.display = 'none';
+    }
+
+    function saveApiUrl() {
+      const val = document.getElementById('api-url-input').value.trim();
+      apiBaseUrl = val;
+      if (val) {
+        localStorage.setItem('rag_api_url', val);
+      } else {
+        localStorage.removeItem('rag_api_url');
+      }
+      updateApiStatus();
+      closeApiModal();
+    }
+
+    function resetApiUrl() {
+      apiBaseUrl = '';
+      localStorage.removeItem('rag_api_url');
+      document.getElementById('api-url-input').value = '';
+      updateApiStatus();
+      closeApiModal();
+    }
 
     window.addEventListener('DOMContentLoaded', () => {
+      updateApiStatus();
       marked.setOptions({
         highlight: function(code, lang) {
           if (lang && hljs.getLanguage(lang)) {
@@ -485,7 +631,7 @@
       formData.append('file', file);
 
       try {
-        const res = await fetch('/rag/upload', {
+        const res = await fetch(getEndpoint('/rag/upload'), {
           method: 'POST',
           body: formData
         });
@@ -604,7 +750,7 @@
       scrollEl.scrollTop = scrollEl.scrollHeight;
 
       try {
-        const res = await fetch('/rag/query', {
+        const res = await fetch(getEndpoint('/rag/query'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
