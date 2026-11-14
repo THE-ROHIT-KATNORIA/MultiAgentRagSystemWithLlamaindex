@@ -15,18 +15,20 @@ from api.app import create_app
 # Create the full FastAPI application with all routers & lifespan
 fastapi_app = create_app()
 
-# Gradio interface to satisfy Hugging Face Spaces health check & UI preview
+# Gradio interface to satisfy Hugging Face Spaces root health check & UI preview
 with gr.Blocks(title="Multi-Agent RAG Assistant") as demo:
     gr.Markdown("""
-    # Multi-Agent RAG Assistant is Live!
+    # Multi-Agent RAG Assistant
     
-    - **Web Chat UI**: [Open Chat Interface](/)
-    - **API Documentation**: [Interactive Swagger Docs](/docs)
-    - **Health Status**: [System Health](/health)
+    Enterprise Multi-Agent RAG with LlamaIndex, PostgreSQL/pgvector, and Groq Cloud.
+    
+    - **Clean Web Chat UI**: [Open Chat Interface](/chat)
+    - **Interactive API Documentation**: [Swagger Docs](/docs)
+    - **System Health Status**: [Health Status](/health)
     """)
 
-# Mount Gradio with ssr_mode=False so it only uses pure FastAPI client-side routes
-app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
+# Mount Gradio at root "/" so Hugging Face Spaces health check passes
+app = gr.mount_gradio_app(fastapi_app, demo, path="/", ssr_mode=False)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "7860"))

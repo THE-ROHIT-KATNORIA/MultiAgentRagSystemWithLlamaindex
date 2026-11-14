@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────
 
 # Paths that don't require an API key
-_PUBLIC_PATHS = {"/", "/health", "/docs", "/redoc", "/openapi.json"}
+_PUBLIC_PATHS = {"/", "/chat", "/health", "/docs", "/redoc", "/openapi.json"}
 
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
@@ -134,13 +134,13 @@ def create_app() -> FastAPI:
             embed_model="BAAI/bge-base-en-v1.5",
         )
 
-    @app.get("/", tags=["UI"])
-    async def root():
+    @app.get("/chat", tags=["UI"])
+    async def chat_ui():
         index_file = os.path.join(BASE_DIR, "static", "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file, media_type="text/html")
         return {
-            "message": "LlamaIndex RAG API is running.",
+            "message": "Chat UI index.html not found.",
             "docs": "/docs",
             "health": "/health",
         }
