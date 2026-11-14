@@ -9,6 +9,7 @@ Or with uvicorn directly:
     uvicorn run_api:app --host 0.0.0.0 --port 8000 --reload
 """
 
+import os
 import logging
 import uvicorn
 from api.app import create_app
@@ -21,10 +22,11 @@ logging.basicConfig(
 app = create_app()
 
 if __name__ == "__main__":
+    port = int(os.getenv("PORT", "8000"))
     uvicorn.run(
         "run_api:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=False,          # Set True during development
         log_level="info",
     )

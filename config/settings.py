@@ -65,6 +65,7 @@ REBUILD_PGVECTOR = False
 # ──────────────────────────────────────────────────────────────
 
 ALLOWED_DEPARTMENTS = {"HR", "IT", "FINANCE"}
+ENABLE_RERANKER = os.getenv("ENABLE_RERANKER", "true").lower() in ("true", "1", "yes")
 MAX_INPUT_LENGTH = 2000
 MAX_HISTORY_CHARS = 3000
 RETRIEVAL_TOP_K = 10
