@@ -57,6 +57,16 @@ with gr.Blocks(title="Multi-Agent RAG Assistant") as demo:
 app = gr.mount_gradio_app(fastapi_app, demo, path="/", ssr_mode=False)
 
 if __name__ == "__main__":
+    try:
+        from spaces import zero as _spaces_zero
+        if hasattr(_spaces_zero, "startup"):
+            _spaces_zero.startup()
+            print("[app] ZeroGPU startup report sent successfully", flush=True)
+        else:
+            print("[app] spaces.zero.startup not present (running off ZeroGPU)", flush=True)
+    except Exception as error:
+        print(f"[app] ZeroGPU startup skipped/failed: {error!r}", flush=True)
+
     port = int(os.getenv("PORT", "7860"))
     if port != 7860:
         port = 7860
