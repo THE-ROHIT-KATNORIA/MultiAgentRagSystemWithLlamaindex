@@ -41,6 +41,9 @@ NodeCache/
 evaluation_report.md
 evaluation_report_raw.json
 
+# User uploaded test documents (keep personal info off GitHub)
+Data/*Resume*.pdf
+
 # ──────────────────────────────────────────────────────────────
 # ML models (large binary files — download separately)
 # ──────────────────────────────────────────────────────────────

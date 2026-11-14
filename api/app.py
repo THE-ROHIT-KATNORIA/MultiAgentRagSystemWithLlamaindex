@@ -6,15 +6,20 @@ Creates and configures the FastAPI app with:
 - Lifespan startup (LLM, index, agent initialisation)
 - All routers mounted
 - CORS middleware
+- API key authentication
 - Health endpoint
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
+from config.settings import BASE_DIR
 from api.state import state
 from api.schemas import HealthResponse
 from api.routers.rag_router import router as rag_router
@@ -22,6 +27,31 @@ from api.routers.agent_router import router as agent_router
 from api.routers.notes_router import router as notes_router
 
 log = logging.getLogger(__name__)
+
+
+# ──────────────────────────────────────────────────────────────
+# API Key Authentication Middleware
+# ──────────────────────────────────────────────────────────────
+
+# Paths that don't require an API key
+_PUBLIC_PATHS = {"/", "/health", "/docs", "/redoc", "/openapi.json"}
+
+
+class APIKeyMiddleware(BaseHTTPMiddleware):
+    """Reject requests without a valid X-API-Key header (when API_KEY is set)."""
+
+    async def dispatch(self, request: Request, call_next):
+        api_key = os.getenv("API_KEY", "")
+
+        # Skip auth if no key is configured, or if the path is public
+        if not api_key or request.url.path in _PUBLIC_PATHS:
+            return await call_next(request)
+
+        request_key = request.headers.get("X-API-Key", "")
+        if request_key != api_key:
+            raise HTTPException(status_code=401, detail="Invalid or missing API key.")
+
+        return await call_next(request)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -78,10 +108,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    # ── API Key Auth ──
+    app.add_middleware(APIKeyMiddleware)
+
     # ── CORS ──
+    allowed_origins = os.getenv("CORS_ORIGINS", "*").split(",")
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],       # Tighten in production
+        allow_origins=[o.strip() for o in allowed_origins],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -92,15 +126,19 @@ def create_app() -> FastAPI:
     async def health():
         """Check if the API is up and the pipeline is ready."""
         from llama_index.core import Settings
+        from config.settings import GROQ_MODEL
         return HealthResponse(
             status="ready" if state.ready else "initialising",
             version="1.0.0",
-            llm_model="gemma4:31b",
-            embed_model="nomic-embed-text:latest",
+            llm_model=f"{GROQ_MODEL} (Groq)",
+            embed_model="BAAI/bge-base-en-v1.5",
         )
 
-    @app.get("/", tags=["Health"])
+    @app.get("/", tags=["UI"])
     async def root():
+        index_file = os.path.join(BASE_DIR, "static", "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file, media_type="text/html")
         return {
             "message": "LlamaIndex RAG API is running.",
             "docs": "/docs",

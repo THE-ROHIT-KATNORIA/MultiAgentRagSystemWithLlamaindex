@@ -16,19 +16,16 @@ log = logging.getLogger(__name__)
 
 
 def assign_department(file_name: str) -> str:
-    """Map a source filename to a department label."""
-    name = file_name.lower()
+    """Map a source filename to a department label based on word tokens."""
+    import re
+    tokens = set(re.split(r'[^a-zA-Z0-9]+', file_name.lower()))
 
-    if "it" in name and "security" in name:
-        return "IT"
-    if "hr" in name or "leave" in name:
-        return "HR"
-    if "finance" in name or "budget" in name:
+    if tokens & {"finance", "budget", "payroll", "expense", "invoice", "financial"}:
         return "Finance"
-    if "employee" in name:
-        return "HR"
-    if "it" in name:
+    if tokens & {"security", "infosec", "cyber", "infrastructure", "network"} or "it" in tokens:
         return "IT"
+    if tokens & {"hr", "leave", "employee", "resume", "cv", "hiring", "recruitment", "profile"}:
+        return "HR"
 
     return "NONE"
 

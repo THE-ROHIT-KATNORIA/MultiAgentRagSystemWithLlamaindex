@@ -7,7 +7,9 @@ GET  /rag/history — fetch chat history for a session
 """
 
 import logging
-from fastapi import APIRouter, HTTPException
+import os
+import shutil
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import StreamingResponse
 
 from api.schemas import RAGRequest, RAGResponse, SourceNode, HistoryRequest, HistoryResponse
@@ -18,7 +20,12 @@ from retrieval.router import dynamic_route_and_filter
 from engine.rag_engine import create_rag_engine
 from engine.sub_question import create_sub_question_engine
 from engine.query_rewriter import rewrite_query
-from llama_index.core import Settings
+from config.settings import DATA_DIR, CHUNK_SIZE, CHUNK_OVERLAP
+from ingestion.loader import assign_department
+from ingestion.node_cache import save_nodes
+from retrieval.hybrid import clear_bm25_cache
+from llama_index.core import Settings, SimpleDirectoryReader
+from llama_index.core.node_parser import SentenceSplitter
 
 log = logging.getLogger(__name__)
 router = APIRouter(prefix="/rag", tags=["RAG"])
@@ -56,13 +63,25 @@ async def rag_query(body: RAGRequest):
         answer = ""
 
         if route == "RAG":
-            engine, filters = create_rag_engine(
+            engine, used_filters = create_rag_engine(
                 rewritten, state.index, state.nodes,
                 state.reranker, state.sim_filter,
                 filters=filters, streaming=False,
             )
             response = engine.query(rewritten)
-            answer = str(response)
+            answer = str(response).strip()
+
+            # Automatic fallback: if filtered search produced Empty Response, retry without filters
+            if (not answer or answer == "Empty Response") and used_filters is not None:
+                log.info("Filtered RAG returned empty; falling back to unfiltered retrieval...")
+                fallback_engine, _ = create_rag_engine(
+                    rewritten, state.index, state.nodes,
+                    state.reranker, state.sim_filter,
+                    filters=None, streaming=False,
+                )
+                response = fallback_engine.query(rewritten)
+                answer = str(response).strip()
+
             if hasattr(response, "source_nodes"):
                 for s in response.source_nodes:
                     meta = s.node.metadata
@@ -73,14 +92,29 @@ async def rag_query(body: RAGRequest):
                         text=s.node.get_content()[:300],
                     ))
 
+            if not answer or answer == "Empty Response":
+                answer = "I could not find information answering this question in the uploaded documents."
+
         elif route == "COMPLEX_RAG":
-            engine, filters = create_sub_question_engine(
+            engine, used_filters = create_sub_question_engine(
                 rewritten, state.index, state.nodes,
                 state.reranker, state.sim_filter,
                 filters=filters,
             )
             response = engine.query(rewritten)
-            answer = str(response)
+            answer = str(response).strip()
+
+            # Automatic fallback: if filtered search produced Empty Response, retry without filters
+            if (not answer or answer == "Empty Response") and used_filters is not None:
+                log.info("Filtered COMPLEX_RAG returned empty; falling back to unfiltered retrieval...")
+                fallback_engine, _ = create_sub_question_engine(
+                    rewritten, state.index, state.nodes,
+                    state.reranker, state.sim_filter,
+                    filters=None,
+                )
+                response = fallback_engine.query(rewritten)
+                answer = str(response).strip()
+
             if hasattr(response, "source_nodes"):
                 for s in response.source_nodes:
                     meta = s.node.metadata
@@ -90,6 +124,9 @@ async def rag_query(body: RAGRequest):
                         score=s.score,
                         text=s.node.get_content()[:300],
                     ))
+
+            if not answer or answer == "Empty Response":
+                answer = "I could not find information answering this question in the uploaded documents."
 
         else:  # DIRECT_LLM
             prompt = (
@@ -183,3 +220,50 @@ async def get_history(session_id: str, limit: int = 20):
         return HistoryResponse(session_id=session_id, history=history)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ──────────────────────────────────────────────────────────────
+# POST /rag/upload
+# ──────────────────────────────────────────────────────────────
+
+@router.post("/upload", summary="Upload a document into the knowledge base")
+async def upload_document(file: UploadFile = File(...)):
+    """Upload a PDF, TXT, or Markdown document, chunk, embed, and store in pgvector."""
+    _check_ready()
+    try:
+        os.makedirs(DATA_DIR, exist_ok=True)
+        file_path = os.path.join(DATA_DIR, file.filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Ingest and chunk
+        reader = SimpleDirectoryReader(input_files=[file_path])
+        docs = reader.load_data()
+
+        splitter = SentenceSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
+        new_nodes = splitter.get_nodes_from_documents(docs)
+
+        dept = assign_department(file.filename)
+        for node in new_nodes:
+            node.metadata["file_name"] = file.filename
+            node.metadata["department"] = dept
+
+        # Insert directly into pgvector (Neon)
+        state.index.insert_nodes(new_nodes)
+
+        # Update in-memory node list and BM25 cache
+        if state.nodes is not None:
+            state.nodes.extend(new_nodes)
+            save_nodes(state.nodes)
+        clear_bm25_cache()
+
+        return {
+            "status": "success",
+            "file_name": file.filename,
+            "department": dept,
+            "chunks_indexed": len(new_nodes),
+            "message": f"Successfully indexed '{file.filename}' into knowledge base."
+        }
+    except Exception as exc:
+        log.error("Document upload failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to process document: {exc}")

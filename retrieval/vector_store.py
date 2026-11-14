@@ -13,7 +13,7 @@ from llama_index.vector_stores.postgres import PGVectorStore
 
 from config.settings import (
     POSTGRES_HOST, POSTGRES_PORT, POSTGRES_DB,
-    POSTGRES_USER, POSTGRES_PASSWORD,
+    POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_SSLMODE,
     VECTOR_TABLE_NAME, ACTUAL_VECTOR_TABLE,
     EMBED_DIM, REBUILD_PGVECTOR,
 )
@@ -38,6 +38,11 @@ def make_vector_store() -> PGVectorStore:
         table_name=VECTOR_TABLE_NAME,
         embed_dim=EMBED_DIM,
         use_jsonb=True,
+        create_engine_kwargs={
+            "connect_args": {"sslmode": POSTGRES_SSLMODE},
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+        },
         hnsw_kwargs={
             "hnsw_m": 16,
             "hnsw_ef_construction": 64,

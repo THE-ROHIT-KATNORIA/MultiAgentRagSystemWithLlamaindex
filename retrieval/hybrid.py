@@ -17,6 +17,12 @@ log = logging.getLogger(__name__)
 _bm25_cache: dict[str, BM25Retriever] = {}
 
 
+def clear_bm25_cache():
+    """Clear BM25 cache so newly added nodes are indexed."""
+    _bm25_cache.clear()
+    log.info("Cleared BM25 cache.")
+
+
 def _get_bm25_retriever(nodes, cache_key: str) -> BM25Retriever:
     if cache_key not in _bm25_cache:
         _bm25_cache[cache_key] = BM25Retriever.from_defaults(

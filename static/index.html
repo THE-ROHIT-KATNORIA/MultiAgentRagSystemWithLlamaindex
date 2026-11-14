@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assistant</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2318181b' stroke-width='2'><path d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/></svg>">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #0d0d0d;
+      --text-muted: #71717a;
+      --border: #e4e4e7;
+      --user-bg: #f4f4f5;
+      --input-border: #d4d4d8;
+      --input-focus: #18181b;
+      --accent: #18181b;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Minimal Header ── */
+    header {
+      height: 52px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .icon-btn:hover {
+      background: #f4f4f5;
+      border-color: #d4d4d8;
+    }
+
+    /* ── Main Chat Area ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chat-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      scroll-behavior: smooth;
+    }
+
+    .chat-container {
+      width: 100%;
+      max-width: 740px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      min-height: 100%;
+    }
+
+    /* ── Pure, Clean Welcome ── */
+    .welcome-wrap {
+      margin: auto;
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+
+    .welcome-text {
+      font-size: 30px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    /* ── Message Rows ── */
+    .message-row {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .message-bubble {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .message-row.user .message-bubble {
+      background: var(--user-bg);
+      padding: 10px 18px;
+      border-radius: 20px;
+      max-width: 80%;
+      word-break: break-word;
+    }
+
+    .message-row.assistant .message-bubble {
+      width: 100%;
+      max-width: 100%;
+      word-break: break-word;
+    }
+
+    /* Assistant content formatting */
+    .message-bubble p { margin-bottom: 12px; }
+    .message-bubble p:last-child { margin-bottom: 0; }
+    .message-bubble ul, .message-bubble ol { margin: 8px 0 12px 22px; }
+    .message-bubble li { margin-bottom: 4px; }
+    .message-bubble h1, .message-bubble h2, .message-bubble h3 {
+      margin: 16px 0 8px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .message-bubble code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #f4f4f5;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .message-bubble pre {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .message-bubble pre code {
+      background: transparent;
+      padding: 0;
+      font-size: 13px;
+    }
+
+    /* Sources citation box */
+    .sources-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #fcfcfc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12.5px;
+    }
+    .sources-toggle {
+      color: #2563eb;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      user-select: none;
+    }
+    .sources-list {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+      display: none;
+    }
+    .sources-list.open { display: block; }
+    .source-item {
+      padding: 6px 0;
+      border-bottom: 1px solid #f8fafc;
+    }
+    .source-item:last-child { border-bottom: none; }
+    .source-header {
+      font-weight: 600;
+      color: #1e40af;
+      font-size: 12px;
+    }
+    .source-excerpt {
+      color: #64748b;
+      margin-top: 3px;
+      line-height: 1.45;
+      font-size: 12px;
+    }
+
+    /* ── Bottom Input Section ── */
+    .input-section {
+      width: 100%;
+      max-width: 740px;
+      margin: 0 auto;
+      padding: 0 16px 20px;
+      flex-shrink: 0;
+    }
+
+    /* Upload status notice */
+    #upload-status {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      width: fit-content;
+    }
+    #upload-status.loading {
+      display: inline-flex;
+      background: #f4f4f5;
+      color: #3f3f46;
+      border: 1px solid #e4e4e7;
+    }
+    #upload-status.success {
+      display: inline-flex;
+      background: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    #upload-status.error {
+      display: inline-flex;
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .input-wrapper {
+      background: #ffffff;
+      border: 1px solid var(--input-border);
+      border-radius: 26px;
+      padding: 8px 12px 8px 14px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-wrapper:focus-within {
+      border-color: #71717a;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+
+    .upload-btn {
+      background: transparent;
+      border: none;
+      color: #71717a;
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+    }
+    .upload-btn:hover {
+      color: #0d0d0d;
+      background: #f4f4f5;
+    }
+
+    textarea#user-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: transparent;
+      resize: none;
+      max-height: 160px;
+      height: 24px;
+      padding: 4px 0;
+    }
+    textarea#user-input::placeholder {
+      color: #a1a1aa;
+    }
+
+    .send-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #18181b;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+    }
+    .send-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* ── Typing Indicator ── */
+    .typing-dots {
+      display: inline-flex;
+      gap: 5px;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      background: #a1a1aa;
+      border-radius: 50%;
+      animation: pulse 1.4s infinite ease-in-out both;
+    }
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes pulse {
+      0%, 80%, 100% { transform: scale(0.3); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden File Input -->
+  <input type="file" id="file-uploader" style="display: none;" accept=".pdf,.txt,.md,.docx" onchange="handleFileUpload(event)">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <span>Assistant</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="startNewChat()" title="Start a new chat">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New Chat
+      </button>
+    </div>
+  </header>
+
+  <!-- Main View -->
+  <main>
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="chat-container" id="chat-container">
+        <!-- Welcome Screen -->
+        <div class="welcome-wrap" id="welcome-screen">
+          <h1 class="welcome-text">How can I help you today?</h1>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Section -->
+    <div class="input-section">
+      <!-- Upload Feedback -->
+      <div id="upload-status">
+        <span id="upload-status-text"></span>
+        <span style="cursor: pointer; margin-left: 6px; font-weight: bold;" onclick="dismissUploadStatus()">✕</span>
+      </div>
+
+      <div class="input-wrapper">
+        <!-- Paperclip Upload Button -->
+        <button class="upload-btn" title="Attach document (PDF, TXT, MD)" onclick="triggerUpload()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+        </button>
+
+        <!-- Message Textarea -->
+        <textarea id="user-input" placeholder="Ask a question or upload a document..." rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+
+        <!-- Send Button -->
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let currentSessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      marked.setOptions({
+        highlight: function(code, lang) {
+          if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+          }
+          return hljs.highlightAuto(code).value;
+        },
+        breaks: true
+      });
+      document.getElementById('user-input').focus();
+    });
+
+    function startNewChat() {
+      currentSessionId = 'session_' + Math.random().toString(36).substring(2, 9);
+      document.getElementById('chat-container').innerHTML = `
+        <div class="welcome-wrap" id="welcome-screen">
+          <h1 class="welcome-text">How can I help you today?</h1>
+        </div>
+      `;
+      dismissUploadStatus();
+      const input = document.getElementById('user-input');
+      input.value = '';
+      autoResize(input);
+      input.focus();
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+      document.getElementById('send-btn').disabled = el.value.trim() === '';
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    // ── Upload ──
+    function triggerUpload() {
+      document.getElementById('file-uploader').click();
+    }
+
+    function showUploadStatus(type, message) {
+      const el = document.getElementById('upload-status');
+      const text = document.getElementById('upload-status-text');
+      el.className = type;
+      text.textContent = message;
+    }
+
+    function dismissUploadStatus() {
+      const el = document.getElementById('upload-status');
+      el.className = '';
+      el.style.display = 'none';
+    }
+
+    async function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      showUploadStatus('loading', `Indexing "${file.name}"...`);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/rag/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          showUploadStatus('success', `"${file.name}" indexed (${data.chunks_indexed} chunks)`);
+          appendMessage('assistant', `**Document uploaded:** \`${file.name}\` has been indexed. You can now ask questions about its content.`);
+        } else {
+          const err = await res.json().catch(() => ({ detail: 'Upload error' }));
+          showUploadStatus('error', `Upload failed: ${err.detail || res.statusText}`);
+        }
+      } catch (err) {
+        showUploadStatus('error', `Upload failed: ${err.message}`);
+      } finally {
+        e.target.value = '';
+      }
+    }
+
+    // ── Messages ──
+    function appendMessage(role, content, meta = null) {
+      const welcome = document.getElementById('welcome-screen');
+      if (welcome) welcome.remove();
+
+      const container = document.getElementById('chat-container');
+      const row = document.createElement('div');
+      row.className = `message-row ${role}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = 'message-bubble';
+
+      if (role === 'user') {
+        bubble.textContent = content;
+        row.appendChild(bubble);
+      } else {
+        bubble.innerHTML = marked.parse(content);
+
+        // Sources toggle if present
+        if (meta && meta.sources && meta.sources.length > 0) {
+          const sourcesBox = document.createElement('div');
+          sourcesBox.className = 'sources-box';
+          const uid = 'src_' + Math.random().toString(36).substring(2, 7);
+
+          sourcesBox.innerHTML = `
+            <div class="sources-toggle" onclick="toggleSources('${uid}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+              <span>${meta.sources.length} source(s) referenced</span>
+              <span id="${uid}_icon">▾</span>
+            </div>
+            <div class="sources-list" id="${uid}">
+              ${meta.sources.map(s => `
+                <div class="source-item">
+                  <div class="source-header">${escapeHtml(s.file_name)} ${s.page ? `(Page ${s.page})` : ''}</div>
+                  <div class="source-excerpt">${escapeHtml(s.text || '')}</div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+          bubble.appendChild(sourcesBox);
+        }
+
+        row.appendChild(bubble);
+      }
+
+      container.appendChild(row);
+      const scrollEl = document.getElementById('chat-scroll');
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+      return row;
+    }
+
+    function toggleSources(id) {
+      const list = document.getElementById(id);
+      const icon = document.getElementById(id + '_icon');
+      if (list.classList.contains('open')) {
+        list.classList.remove('open');
+        icon.textContent = '▾';
+      } else {
+        list.classList.add('open');
+        icon.textContent = '▴';
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ── Send Query ──
+    async function sendMessage() {
+      const input = document.getElementById('user-input');
+      const question = input.value.trim();
+      if (!question) return;
+
+      input.value = '';
+      autoResize(input);
+
+      appendMessage('user', question);
+
+      // Add typing indicator
+      const container = document.getElementById('chat-container');
+      const typingRow = document.createElement('div');
+      typingRow.className = 'message-row assistant';
+      typingRow.id = 'typing-indicator';
+      typingRow.innerHTML = `
+        <div class="message-bubble">
+          <div class="typing-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+          </div>
+        </div>
+      `;
+      container.appendChild(typingRow);
+      const scrollEl = document.getElementById('chat-scroll');
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+
+      try {
+        const res = await fetch('/rag/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: question,
+            session_id: currentSessionId
+          })
+        });
+
+        typingRow.remove();
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Server error' }));
+          appendMessage('assistant', `**Error:** ${err.detail || 'Could not complete request.'}`);
+          return;
+        }
+
+        const data = await res.json();
+        appendMessage('assistant', data.answer, {
+          department: data.department,
+          route: data.route,
+          sources: data.sources
+        });
+
+      } catch (err) {
+        typingRow.remove();
+        appendMessage('assistant', `**Network Error:** Could not reach server (${err.message}).`);
+      }
+    }
+  </script>
+</body>
+</html>

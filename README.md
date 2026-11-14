@@ -122,7 +122,7 @@ pip install -r requirements.txt
 ### 2. Configure `.env`
 
 ```env
-OLLAMA_API_KEY=your_key_here
+GROQ_API_KEY=your_groq_api_key_here
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_DB=katnoria_RAG
@@ -160,7 +160,7 @@ Run `python run_rag.py` once, then set it back to `False`.
 ## Usage
 
 ```bash
-# 1. FastAPI REST Server (with Swagger UI at http://localhost:8000/docs)
+# 1. FastAPI REST Server & ChatGPT Web UI (open http://localhost:8000 in your browser)
 python run_api.py
 
 # 2. Interactive RAG Terminal Chat
@@ -226,8 +226,8 @@ Interactive Swagger documentation is available at `http://localhost:8000/docs`.
 
 | Component | Technology |
 |-----------|-----------|
-| LLM | Ollama Cloud — `gemma4:31b` |
-| Embeddings | Local Ollama — `nomic-embed-text` (768-dim) |
+| LLM | Groq Cloud (Free) — `qwen/qwen3.8-27b` |
+| Embeddings | HuggingFace / SentenceTransformers — `BAAI/bge-base-en-v1.5` (768-dim) |
 | Vector Store | PostgreSQL + pgvector |
 | Keyword Search | BM25 (bm25s) |
 | Retrieval Fusion | LlamaIndex QueryFusionRetriever |
