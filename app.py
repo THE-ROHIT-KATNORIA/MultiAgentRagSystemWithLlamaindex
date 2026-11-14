@@ -25,13 +25,12 @@ with gr.Blocks(title="Multi-Agent RAG Assistant") as demo:
     - **Health Status**: [System Health](/health)
     """)
 
-# Mount Gradio at /gradio so root / serves your clean static ChatGPT UI
-try:
-    app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
-except TypeError:
-    app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
+# Mount Gradio with ssr_mode=False so it only uses pure FastAPI client-side routes
+app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "7860"))
+    if port != 7860:
+        port = 7860
     uvicorn.run(app, host="0.0.0.0", port=port)
 
