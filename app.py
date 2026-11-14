@@ -5,6 +5,9 @@ Mounts the FastAPI RAG backend + static chat UI alongside Gradio.
 """
 
 import os
+# Disable Gradio 5 Server-Side Rendering (SSR) Node proxy to prevent port 7861 binding conflicts
+os.environ["GRADIO_SSR_MODE"] = "false"
+
 import uvicorn
 import gradio as gr
 from api.app import create_app
@@ -23,7 +26,10 @@ with gr.Blocks(title="Multi-Agent RAG Assistant") as demo:
     """)
 
 # Mount Gradio at /gradio so root / serves your clean static ChatGPT UI
-app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
+try:
+    app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
+except TypeError:
+    app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "7860"))

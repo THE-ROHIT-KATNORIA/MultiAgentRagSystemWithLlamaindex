@@ -17,7 +17,7 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 pydantic>=2.8.0
 python-multipart>=0.0.9
-gradio>=4.0.0
+gradio>=4.44.0,<5.0.0
 
 # Agent Tools & Utilities
 python-dotenv>=1.0.0
